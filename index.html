@@ -20,15 +20,6 @@
       justify-content: center;
     }
 
-    /* Logo */
-    .logo {
-      width: 220px;
-      max-width: 80%;
-      height: auto;
-      object-fit: contain;
-      margin-bottom: 30px;
-    }
-
     /* Login box */
     .login-box {
       box-sizing: border-box;
@@ -41,12 +32,15 @@
       text-align: center;
     }
 
-    /* Login title */
-    .login-box h2 {
-      color: #F58220;
-      margin-top: 0;
-      margin-bottom: 25px;
-      font-size: 26px;
+    /* Logo inside the box */
+    .logo {
+      display: block;
+      width: 220px;
+      max-width: 100%;
+      height: auto;
+      max-height: 120px;
+      object-fit: contain;
+      margin: 0 auto 25px;
     }
 
     /* Input fields */
@@ -88,18 +82,17 @@
 
 <body>
 
-  <!-- Replace the URL below with your image filename or URL -->
-  <img
-    src="TaxiQaidLogo.jpg"
-    alt="TaxiQaid Logo"
-    class="logo"
-  >
-
-  <!-- Login form -->
   <div class="login-box">
-    <h2>Login</h2>
+
+    <!-- Logo replaces the Login title -->
+    <img
+      src="PUT_YOUR_IMAGE_URL_HERE"
+      alt="TaxiQaid Logo"
+      class="logo"
+    >
 
     <form action="#" method="post">
+
       <input
         type="text"
         name="username"
@@ -117,7 +110,9 @@
       >
 
       <button type="submit">Sign In</button>
+
     </form>
+
   </div>
 
 </body>
