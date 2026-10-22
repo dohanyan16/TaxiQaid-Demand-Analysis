@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,6 +68,11 @@
       background: #D96A10;
     }
 
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
     #error-message {
       color: #c62828;
       font-size: 14px;
@@ -78,10 +82,7 @@
 </head>
 
 <body>
-
   <div class="login-box">
-
-    <!-- Replace with your logo filename -->
     <img
       src="TaxiQaidLogo.jpg"
       alt="TaxiQaid Logo"
@@ -94,6 +95,7 @@
         id="username"
         placeholder="Username"
         autocomplete="username"
+        autocapitalize="none"
         required
       >
 
@@ -105,69 +107,104 @@
         required
       >
 
-      <button type="submit">Sign In</button>
+      <button id="login-button" type="submit">
+        Sign In
+      </button>
 
       <p id="error-message" role="alert" hidden>
         Invalid username or password.
       </p>
     </form>
-
   </div>
 
-  <script>
-    // OCC accounts
-    const occAccounts = {
-      "OUsmani": "123@123",
-      "AKhairani": "123@123",
-      "MUsmani": "123@123",
-      "ABashir": "123@123",
-      "SBakhamees": "123@123"
-    };
+  <!-- Supabase client library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    // Manager accounts
-    const managerAccounts = {
-      "DOhanyan": "dabox106",
-      "RRoy": "roy123@123",
-      "CNavarro": "navarro123@123",
-      "MAljilany": "aljilany123@123",
-      "MBeg": "beg123@123",
-      "SZaman": "zaman123@123",
-      "ALuque": "luque123@123"
-    };
+  <script>
+    // Replace these with your own Supabase project details.
+    const SUPABASE_URL = "https://gycijhgmmaznvcoxphlh.supabase.co/rest/v1/";
+    const SUPABASE_PUBLIC_KEY = "sb_publishable_HzPfzuV-3Z-6aCuvGWcBHQ_R5gF7F7T";
+
+    const { createClient } = supabase;
+
+    const supabaseClient = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY
+    );
 
     const form = document.getElementById("login-form");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
     const errorMessage = document.getElementById("error-message");
+    const loginButton = document.getElementById("login-button");
 
-    form.addEventListener("submit", function(event) {
+    form.addEventListener("submit", async function(event) {
       event.preventDefault();
 
-      const username = document
-        .getElementById("username").value.trim();
-
-      const password = document
-        .getElementById("password").value;
-
       errorMessage.hidden = true;
+      loginButton.disabled = true;
+      loginButton.textContent = "Signing in...";
 
-      if (
-        Object.prototype.hasOwnProperty.call(occAccounts, username) &&
-        occAccounts[username] === password
-      ) {
-        window.location.href = "occ.html";
-        return;
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      try {
+        // This assumes the Authentication email is:
+        // lowercase username + @taxiqaiddemand.com
+        const email =
+          username.toLowerCase() + "@taxiqaiddemand.com";
+
+        // Authenticate against Supabase, not against HTML passwords.
+        const { data: authData, error: authError } =
+          await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+
+        if (authError) {
+          throw authError;
+        }
+
+        // Obtain the role belonging to the authenticated user.
+        const { data: profile, error: profileError } =
+          await supabaseClient
+            .from("taxiqaid_roles")
+            .select("role")
+            .eq("user_id", authData.user.id)
+            .maybeSingle();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        if (!profile) {
+          await supabaseClient.auth.signOut();
+          throw new Error("No authorized role was found.");
+        }
+
+        const role = profile.role;
+
+        if (role === "OCC") {
+          window.location.replace("occ.html");
+        } else if (role === "Manager") {
+          window.location.replace("manager.html");
+        } else {
+          await supabaseClient.auth.signOut();
+          throw new Error("The assigned role is not valid.");
+        }
+
+      } catch (error) {
+        console.error("Login error:", error);
+
+        errorMessage.textContent =
+          "Unable to sign in. Check your credentials or contact the administrator.";
+
+        errorMessage.hidden = false;
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = "Sign In";
       }
-
-      if (
-        Object.prototype.hasOwnProperty.call(managerAccounts, username) &&
-        managerAccounts[username] === password
-      ) {
-        window.location.href = "manager.html";
-        return;
-      }
-
-      errorMessage.hidden = false;
     });
   </script>
-
 </body>
 </html>
