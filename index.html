@@ -1,29 +1,25 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>TaxiQaid</title>
 
   <style>
-    /* Orange background */
     body {
       margin: 0;
       min-height: 100vh;
       background-color: #F58220;
       font-family: Arial, sans-serif;
-
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
 
-    /* Login box */
     .login-box {
       box-sizing: border-box;
-      background-color: white;
+      background: white;
       width: 380px;
       max-width: calc(100% - 40px);
       padding: 30px;
@@ -32,19 +28,17 @@
       text-align: center;
     }
 
-    /* Logo inside the box */
     .logo {
       display: block;
       width: 220px;
       max-width: 100%;
-      height: auto;
       max-height: 120px;
+      height: auto;
       object-fit: contain;
       margin: 0 auto 25px;
     }
 
-    /* Input fields */
-    .login-box input {
+    input {
       box-sizing: border-box;
       width: 100%;
       padding: 12px;
@@ -52,30 +46,33 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 16px;
-      outline: none;
     }
 
-    .login-box input:focus {
-      border-color: #F58220;
-      box-shadow: 0 0 4px rgba(245, 130, 32, 0.4);
+    input:focus {
+      outline: 2px solid #F58220;
+      outline-offset: 1px;
     }
 
-    /* Sign In button */
-    .login-box button {
+    button {
       width: 100%;
       padding: 12px;
-      background-color: #F58220;
+      background: #F58220;
       color: white;
       border: none;
       border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s;
     }
 
-    .login-box button:hover {
-      background-color: #D96A10;
+    button:hover {
+      background: #D96A10;
+    }
+
+    #error-message {
+      color: #c62828;
+      font-size: 14px;
+      margin: 15px 0 0;
     }
   </style>
 </head>
@@ -84,18 +81,17 @@
 
   <div class="login-box">
 
-    <!-- Logo replaces the Login title -->
+    <!-- Replace with your logo filename -->
     <img
       src="TaxiQaidLogo.jpg"
       alt="TaxiQaid Logo"
       class="logo"
     >
 
-    <form action="#" method="post">
-
+    <form id="login-form">
       <input
         type="text"
-        name="username"
+        id="username"
         placeholder="Username"
         autocomplete="username"
         required
@@ -103,7 +99,7 @@
 
       <input
         type="password"
-        name="password"
+        id="password"
         placeholder="Password"
         autocomplete="current-password"
         required
@@ -111,9 +107,67 @@
 
       <button type="submit">Sign In</button>
 
+      <p id="error-message" role="alert" hidden>
+        Invalid username or password.
+      </p>
     </form>
 
   </div>
+
+  <script>
+    // OCC accounts
+    const occAccounts = {
+      "OUsmani": "123@123",
+      "AKhairani": "123@123",
+      "MUsmani": "123@123",
+      "ABashir": "123@123",
+      "SBakhamees": "123@123"
+    };
+
+    // Manager accounts
+    const managerAccounts = {
+      "DOhanyan": "dabox106",
+      "RRoy": "roy123@123",
+      "CNavarro": "navarro123@123",
+      "MAljilany": "aljilany123@123",
+      "MBeg": "beg123@123",
+      "SZaman": "zaman123@123",
+      "ALuque": "luque123@123"
+    };
+
+    const form = document.getElementById("login-form");
+    const errorMessage = document.getElementById("error-message");
+
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const username = document
+        .getElementById("username").value.trim();
+
+      const password = document
+        .getElementById("password").value;
+
+      errorMessage.hidden = true;
+
+      if (
+        Object.prototype.hasOwnProperty.call(occAccounts, username) &&
+        occAccounts[username] === password
+      ) {
+        window.location.href = "occ.html";
+        return;
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(managerAccounts, username) &&
+        managerAccounts[username] === password
+      ) {
+        window.location.href = "manager.html";
+        return;
+      }
+
+      errorMessage.hidden = false;
+    });
+  </script>
 
 </body>
 </html>
