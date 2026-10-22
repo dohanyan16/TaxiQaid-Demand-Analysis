@@ -240,16 +240,15 @@
     const resumen = document.getElementById("resumen");
 
     for (let h = 0; h < 24; h++) {
-  const hora = String(h).padStart(2, "0");
-  const campo = hora + "_00";
+      const campo = String(h).padStart(2, "0") + "_00";
+      const opcion = document.createElement("option");
 
-  const opcion = document.createElement("option");
+      opcion.value = campo;
+      opcion.textContent =
+        String(h).padStart(2, "0") + ":00";
 
-  opcion.value = campo;
-  opcion.textContent = hora + ":00";
-
-  selector.appendChild(opcion);
-}
+      selector.appendChild(opcion);
+    }
 
     let datosGeoJSON = null;
     let capaMapa = null;
