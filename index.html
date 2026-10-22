@@ -1,9 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>TaxiQaid</title>
 
   <style>
@@ -20,28 +20,33 @@
       justify-content: center;
     }
 
-    /* Main title */
-    h1 {
-      color: white;
-      font-size: 42px;
+    /* Logo */
+    .logo {
+      width: 220px;
+      max-width: 80%;
+      height: auto;
+      object-fit: contain;
       margin-bottom: 30px;
     }
 
     /* Login box */
     .login-box {
+      box-sizing: border-box;
       background-color: white;
-      width: 320px;
-      max-width: calc(100% - 64px);
+      width: 380px;
+      max-width: calc(100% - 40px);
       padding: 30px;
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
       text-align: center;
     }
 
+    /* Login title */
     .login-box h2 {
       color: #F58220;
       margin-top: 0;
       margin-bottom: 25px;
+      font-size: 26px;
     }
 
     /* Input fields */
@@ -61,7 +66,7 @@
       box-shadow: 0 0 4px rgba(245, 130, 32, 0.4);
     }
 
-    /* Login button */
+    /* Sign In button */
     .login-box button {
       width: 100%;
       padding: 12px;
@@ -72,6 +77,7 @@
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      transition: background-color 0.2s;
     }
 
     .login-box button:hover {
@@ -82,12 +88,18 @@
 
 <body>
 
-  <h1>TaxiQaid</h1>
+  <!-- Replace the URL below with your image filename or URL -->
+  <img
+    src="PUT_YOUR_IMAGE_URL_HERE"
+    alt="TaxiQaid Logo"
+    class="logo"
+  >
 
+  <!-- Login form -->
   <div class="login-box">
     <h2>Login</h2>
 
-    <form>
+    <form action="#" method="post">
       <input
         type="text"
         name="username"
