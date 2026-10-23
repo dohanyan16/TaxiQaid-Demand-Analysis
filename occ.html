@@ -235,6 +235,12 @@
   <label>&nbsp;</label>
   <button id="toggleTaxiStops">Disable Taxi Stops</button>
 </div>
+        <div class="grupo">
+  <label>&nbsp;</label>
+  <button id="toggleDemandHotspots">
+    Disable Demand Hotspots
+  </button>
+</div>
 
         <div class="grupo">
           <label for="selector">Select hour:</label>
@@ -272,12 +278,21 @@
     const servicio =
       "https://wms.prod.qgiscloud.com/dohanyan16/TaxiQaid_Demand_Analysis";
 
-    const capa = "Weekly_Analysis";
-    const capaTaxiStop = "Taxi_Stops";
-    let capaParadas = null;
-    let taxiStopsVisible = true;
+   const capa = "Weekly_Analysis";
+const capaTaxiStop = "Taxi_Stops";
+const capaDemandHotspots = "Demand_Hotspots";
 
-const botonTaxiStops = document.getElementById("toggleTaxiStops");
+let capaParadas = null;
+let capaHotspots = null;
+
+let taxiStopsVisible = true;
+let hotspotsVisible = true;
+
+const botonTaxiStops =
+  document.getElementById("toggleTaxiStops");
+
+const botonDemandHotspots =
+  document.getElementById("toggleDemandHotspots");
 
     const mapa = L.map("map", {
       center: [21.3891, 39.8579],
@@ -626,6 +641,24 @@ function crearCortes(valores) {
       '<b>Taxi Stops</b>' +
     '</div>';
 }
+        if (hotspotsVisible) {
+  html +=
+    '<div style="margin-top:8px;padding-top:6px;' +
+    'border-top:1px solid #ddd;">' +
+      '<span style="' +
+        'display:inline-block;' +
+        'width:12px;' +
+        'height:12px;' +
+        'border-radius:50%;' +
+        'background:#8e44ad;' +
+        'border:2px solid #ffffff;' +
+        'box-shadow:0 0 0 1px #777;' +
+        'margin-right:5px;' +
+        'vertical-align:middle;' +
+      '"></span>' +
+      '<b>Demand Hotspots</b>' +
+    '</div>';
+}
 
 div.innerHTML = html;
 L.DomEvent.disableClickPropagation(div);
@@ -767,6 +800,110 @@ if (taxiStopsVisible) {
   mapa.removeLayer(capaParadas);
 }
 }
+    async function cargarDemandHotspots() {
+  const parametros = new URLSearchParams({
+    service: "WFS",
+    version: "1.1.0",
+    request: "GetFeature",
+    typeName: capaDemandHotspots,
+    outputFormat: "application/json"
+  });
+
+  const respuesta = await fetch(
+    servicio + "?" + parametros.toString()
+  );
+
+  const responseText = await respuesta.text();
+
+  if (!respuesta.ok) {
+    throw new Error(
+      "HTTP " + respuesta.status + ": " +
+      responseText.slice(0, 300)
+    );
+  }
+
+  let geojson;
+
+  try {
+    geojson = JSON.parse(responseText);
+  } catch (error) {
+    throw new Error(
+      "Invalid JSON response: " +
+      responseText.slice(0, 300)
+    );
+  }
+
+  if (!geojson.features) {
+    throw new Error(
+      "No hotspot features returned: " +
+      responseText.slice(0, 300)
+    );
+  }
+
+  if (capaHotspots) {
+    mapa.removeLayer(capaHotspots);
+  }
+
+  capaHotspots = L.geoJSON(geojson, {
+    pointToLayer: (feature, latlng) => {
+      return L.circleMarker(latlng, {
+        radius: 6,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#8e44ad",
+        fillOpacity: 1
+      });
+    },
+
+    onEachFeature: (feature, layer) => {
+      const nombre =
+        feature.properties?.name ?? "Demand Hotspot";
+
+      const geometry = feature.geometry;
+      let coordinates = null;
+
+      if (geometry?.type === "Point") {
+        coordinates = geometry.coordinates;
+      } else if (
+        geometry?.type === "MultiPoint" &&
+        geometry.coordinates.length > 0
+      ) {
+        coordinates = geometry.coordinates[0];
+      }
+
+      let contenido =
+        "<b>" + escaparHTML(nombre) + "</b>";
+
+      if (coordinates && coordinates.length >= 2) {
+        const longitude = Number(coordinates[0]);
+        const latitude = Number(coordinates[1]);
+
+        if (
+          Number.isFinite(latitude) &&
+          Number.isFinite(longitude)
+        ) {
+          const googleMapsUrl =
+            "https://www.google.com/maps/search/?api=1&query=" +
+            encodeURIComponent(latitude + "," + longitude);
+
+          contenido +=
+            '<br><a href="' + googleMapsUrl +
+            '" target="_blank" rel="noopener noreferrer">' +
+            "Open in Google Maps</a>";
+        }
+      }
+
+      layer.bindPopup(contenido);
+    }
+  });
+
+  if (hotspotsVisible) {
+    capaHotspots.addTo(mapa);
+    capaHotspots.bringToFront();
+  } else {
+    mapa.removeLayer(capaHotspots);
+  }
+}
 
     async function cargarDatos() {
       if (cargando) return;
@@ -811,6 +948,13 @@ try {
   console.error("Error details:", error.message);
   estado.textContent =
     "Taxi stops error: " + error.message;
+}
+        try {
+  await cargarDemandHotspots();
+  console.log("Demand_Hotspots loaded successfully.");
+} catch (error) {
+  console.error("Error loading Demand_Hotspots:", error);
+  console.error("Error details:", error.message);
 }
 
 // Start in grey mode. Do not calculate automatically.
@@ -889,6 +1033,24 @@ actualizarMapa();
       capaParadas.bringToFront();
     } else {
       mapa.removeLayer(capaParadas);
+    }
+  }
+
+  actualizarMapa();
+});
+    botonDemandHotspots.addEventListener("click", () => {
+  hotspotsVisible = !hotspotsVisible;
+
+  botonDemandHotspots.textContent = hotspotsVisible
+    ? "Disable Demand Hotspots"
+    : "Enable Demand Hotspots";
+
+  if (capaHotspots) {
+    if (hotspotsVisible) {
+      capaHotspots.addTo(mapa);
+      capaHotspots.bringToFront();
+    } else {
+      mapa.removeLayer(capaHotspots);
     }
   }
 
