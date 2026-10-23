@@ -268,6 +268,8 @@
       "https://wms.prod.qgiscloud.com/dohanyan16/TaxiQaid_Demand_Analysis";
 
     const capa = "Weekly_Analysis";
+    const capaTaxiStop = "Taxi Stop";
+    let capaParadas = null;
 
     const mapa = L.map("map", {
       center: [21.3891, 39.8579],
@@ -622,6 +624,65 @@ function crearCortes(valores) {
           : "Distribution calculated successfully.";
     }
 
+    async function cargarParadasTaxi() {
+  const parametros = new URLSearchParams({
+    service: "WFS",
+    version: "1.1.0",
+    request: "GetFeature",
+    typeName: capaTaxiStop,
+    outputFormat: "application/json"
+  });
+
+  const respuesta = await fetch(
+    servicio + "?" + parametros.toString()
+  );
+
+  if (!respuesta.ok) {
+    throw new Error("No se pudieron cargar las paradas de taxi");
+  }
+
+  const geojson = await respuesta.json();
+
+  if (!geojson.features) {
+    throw new Error("El servicio no ha devuelto las paradas");
+  }
+
+  if (capaParadas) {
+    mapa.removeLayer(capaParadas);
+  }
+
+  capaParadas = L.geoJSON(geojson, {
+    pointToLayer: (feature, latlng) => {
+      return L.circleMarker(latlng, {
+        radius: 6,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#F58220",
+        fillOpacity: 1
+      });
+    },
+
+    onEachFeature: (feature, layer) => {
+      const nombre = feature.properties?.Name
+        ?? "Taxi Stop";
+
+      const latlng = layer.getLatLng();
+
+      const googleMapsUrl =
+        "https://www.google.com/maps/search/?api=1&query=" +
+        latlng.lat + "," + latlng.lng;
+
+      const contenido =
+        "<b>" + escaparHTML(nombre) + "</b><br>" +
+        '<a href="' + googleMapsUrl +
+        '" target="_blank" rel="noopener noreferrer">' +
+        "Open in Google Maps</a>";
+
+      layer.bindPopup(contenido);
+    }
+  }).addTo(mapa);
+}
+
     async function cargarDatos() {
       if (cargando) return;
 
@@ -654,6 +715,7 @@ function crearCortes(valores) {
         }
 
         datosGeoJSON = datos;
+        await cargarParadasTaxi();
 
         // Start in grey mode. Do not calculate automatically.
         distribucion = null;
