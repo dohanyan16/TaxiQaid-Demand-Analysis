@@ -500,15 +500,6 @@ const cacheCapas = new Map();
   return nombre;
 }
 
-  const nombre = capasQGIS[filtros.option];
-
-  if (!nombre) {
-    throw new Error("No QGIS layer configured for this option.");
-  }
-
-  return nombre;
-}
-
 function obtenerCampo(filtros) {
   return filtros.hour === "Total" ? "total" : filtros.hour;
 }
@@ -767,9 +758,16 @@ function mostrarAnalisis(geojson, filtros) {
 }
 
 function actualizarResumen(filtros) {
+  const periodo =
+    catalogoCapas[filtros.year]?.[filtros.month];
+
+  const nombreMes = periodo
+    ? periodo.name
+    : filtros.month;
+
   resumen.textContent =
     "Year: " + filtros.year +
-    " | Month: May" +
+    " | Month: " + nombreMes +
     " | Hour: " +
     (filtros.hour === "Total"
       ? "Total"
@@ -835,14 +833,14 @@ optionSelector.addEventListener("change", actualizarSeleccion);
 
     const geojson = await cargarCapaQGIS(nombreCapa);
 
-    // The map opens in grey mode.
+    // Show the initial layer in grey.
     mostrarMapaInicial(geojson);
 
   } catch (error) {
     console.error("Initial loading error:", error);
 
     estado.textContent =
-      "Could not load the initial layer. " + error.message;
+      "Could not load the initial layer: " + error.message;
   }
 }
 
