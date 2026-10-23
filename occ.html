@@ -331,43 +331,29 @@
     }
 
     // Nine cut points create ten classes.
-   function crearCortes(valores) {
-  const positivos = valores
-    .filter(v => v > 0)
-    .sort((a, b) => a - b);
+function crearCortes(valores) {
+  const ordenados = [...valores].sort((a, b) => a - b);
 
-  if (!positivos.length) return [];
+  if (!ordenados.length) return [];
 
-  const minimo = positivos[0];
-  const maximo = positivos[positivos.length - 1];
-
-  // Si todos los valores positivos son iguales,
-  // no necesitamos nueve intervalos distintos.
-  if (minimo === maximo) {
-    return Array(9).fill(maximo);
-  }
-
-  // Nueve cortes numéricos entre el mínimo y el máximo.
   return Array.from({ length: 9 }, (_, i) => {
-    return minimo + ((maximo - minimo) * (i + 1)) / 10;
+    const proporcion = (i + 1) / 10;
+    const indice = Math.floor(
+      (ordenados.length - 1) * proporcion
+    );
+
+    return ordenados[indice];
   });
 }
 
     function obtenerIndice(valor, cortes) {
-  // Las zonas sin datos se mantienen diferenciadas.
-  if (valor === null) return -1;
+  if (valor === null || !cortes.length) return -1;
 
-  // Todos los ceros tendrán el mismo color claro.
-  if (valor === 0) return 0;
-
-  if (!cortes.length) return 1;
-
-  // Los valores positivos utilizan los nueve colores restantes.
   const indice = cortes.findIndex(
     corte => valor <= corte
   );
 
-  return indice === -1 ? 9 : indice + 1;
+  return indice === -1 ? 9 : indice;
 }
 
     function escaparHTML(valor) {
