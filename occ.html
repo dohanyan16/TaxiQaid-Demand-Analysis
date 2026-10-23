@@ -667,8 +667,14 @@ return div;
       };
 
       controlLeyenda.addTo(mapa);
-      if (capaParadas) {
+
+// Keep both point layers above the demand zones.
+if (capaParadas && taxiStopsVisible) {
   capaParadas.bringToFront();
+}
+
+if (capaHotspots && hotspotsVisible) {
+  capaHotspots.bringToFront();
 }
 
       const sinAsignar =
@@ -845,14 +851,7 @@ if (taxiStopsVisible) {
   }
 
   capaHotspots = L.geoJSON(geojson, {
-    pointToLayer: (feature, latlng) => {
-      return L.circleMarker(latlng, {
-        radius: 6,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: "#8e44ad",
-        fillOpacity: 1
-      });
+         });
     },
 
     onEachFeature: (feature, layer) => {
