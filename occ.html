@@ -683,23 +683,34 @@ if (!geojson.features) {
     },
 
     onEachFeature: (feature, layer) => {
-      const nombre = feature.properties?.name
-        ?? "Taxi Stop";
+  const nombre = feature.properties?.name
+    ?? "Taxi Stop";
 
-      const latlng = layer.getLatLng();
+  let latlng;
 
-      const googleMapsUrl =
-        "https://www.google.com/maps/search/?api=1&query=" +
-        latlng.lat + "," + latlng.lng;
+  if (layer.getLatLng) {
+    latlng = layer.getLatLng();
+  } else if (feature.geometry?.type === "Point") {
+    const coordinates = feature.geometry.coordinates;
+    latlng = L.latLng(coordinates[1], coordinates[0]);
+  }
 
-      const contenido =
-        "<b>" + escaparHTML(nombre) + "</b><br>" +
-        '<a href="' + googleMapsUrl +
-        '" target="_blank" rel="noopener noreferrer">' +
-        "Open in Google Maps</a>";
+  let contenido =
+    "<b>" + escaparHTML(nombre) + "</b>";
 
-      layer.bindPopup(contenido);
-    }
+  if (latlng) {
+    const googleMapsUrl =
+      "https://www.google.com/maps/search/?api=1&query=" +
+      latlng.lat + "," + latlng.lng;
+
+    contenido +=
+      '<br><a href="' + googleMapsUrl +
+      '" target="_blank" rel="noopener noreferrer">' +
+      "Open in Google Maps</a>";
+  }
+
+  layer.bindPopup(contenido);
+}
   }).addTo(mapa);
 }
 
