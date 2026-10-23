@@ -10,201 +10,209 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+ 
+<style>
+  * {
+    box-sizing: border-box;
+  }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      color: #222;
-    }
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
 
+  body {
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    color: #222;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  header {
+    flex: 0 0 auto;
+    padding: 12px 22px;
+    background: #F58220;
+    color: white;
+  }
+
+  .cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .marca {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 0;
+  }
+
+  .logo {
+    width: 62px;
+    height: 62px;
+    object-fit: contain;
+    background: white;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: 22px;
+    margin: 0;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+
+  .controles {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  label {
+    font-size: 13px;
+  }
+
+  select,
+  input,
+  button {
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+
+  select,
+  input {
+    border: 1px solid #ddd;
+    background: white;
+    color: #222;
+  }
+
+  input {
+    width: 145px;
+  }
+
+  button {
+    cursor: pointer;
+    border: 1px solid white;
+    background: white;
+    color: #B9570A;
+    font-weight: bold;
+  }
+
+  button:hover {
+    background: #fff0e3;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  #selector {
+    min-width: 105px;
+  }
+
+  #estado {
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  #resumen {
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* El mapa ocupa todo el espacio restante de la pantalla */
+  #map {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    background: #e5e5e5;
+  }
+
+  .leyenda {
+    background: white;
+    padding: 8px 10px;
+    line-height: 1.25;
+    font-size: 12px;
+    box-shadow: 0 1px 5px #999;
+    border-radius: 5px;
+    color: #222;
+  }
+
+  .muestra {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 5px;
+    vertical-align: middle;
+    border: 1px solid #777;
+  }
+
+  @media (max-width: 650px) {
     header {
-      padding: 12px 22px;
-      background: #F58220;
-      color: white;
+      padding: 10px 12px;
     }
 
     .cabecera {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
+      align-items: stretch;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .marca {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      min-width: 0;
+      gap: 10px;
     }
 
     .logo {
-      width: 62px;
-      height: 62px;
-      object-fit: contain;
-      background: white;
-      border-radius: 5px;
-      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
     }
 
     h1 {
-      font-size: 22px;
-      margin: 0;
-      font-weight: bold;
-      letter-spacing: 0.5px;
+      font-size: 18px;
     }
 
     .controles {
-      display: flex;
-      align-items: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
+      width: 100%;
+      align-items: stretch;
+      gap: 8px;
     }
 
     .grupo {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
+      flex: 1 1 130px;
     }
 
-    label {
-      font-size: 13px;
-    }
-
-    select,
     input,
-    button {
-      min-height: 38px;
-      padding: 8px 12px;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-
     select,
-    input {
-      border: 1px solid #ddd;
-      background: white;
-      color: #222;
-    }
-
-    input {
-      width: 145px;
-    }
-
     button {
-      cursor: pointer;
-      border: 1px solid white;
-      background: white;
-      color: #B9570A;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #fff0e3;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: wait;
-    }
-
-    #selector {
-      min-width: 105px;
+      width: 100%;
+      min-width: 0;
     }
 
     #estado {
-      font-size: 13px;
       margin-top: 8px;
     }
-
-    #resumen {
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    #map {
-  height: calc(100vh - 125px);
-  min-height: 300px;
-  background: #e5e5e5;
-}
-
-    .leyenda {
-  background: white;
-  padding: 8px 10px;
-  line-height: 1.25;
-  font-size: 12px;
-  box-shadow: 0 1px 5px #999;
-  border-radius: 5px;
-  color: #222;
-  max-height: none;
-  overflow: visible;
-}
-
-.leyenda .muestra {
-  width: 12px;
-  height: 12px;
-  margin-right: 5px;
-}
-
-    .muestra {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      margin-right: 6px;
-      vertical-align: middle;
-      border: 1px solid #777;
-    }
-
-    @media (max-width: 650px) {
-      header {
-        padding: 12px;
-      }
-
-      .cabecera {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .marca {
-        gap: 10px;
-      }
-
-      .logo {
-        width: 48px;
-        height: 48px;
-      }
-
-      h1 {
-        font-size: 18px;
-      }
-
-      .controles {
-        width: 100%;
-        align-items: stretch;
-      }
-
-      .grupo {
-        flex: 1 1 130px;
-      }
-
-      input,
-      select,
-      button {
-        width: 100%;
-        min-width: 0;
-      }
-
-      #map {
-  height: calc(100dvh - 210px);
-  min-height: 250px;
-}
-    }
-  </style>
+  }
+</style>
 </head>
 
 <body>
