@@ -637,12 +637,32 @@ function crearCortes(valores) {
     servicio + "?" + parametros.toString()
   );
 
-  if (!respuesta.ok) {
-    throw new Error("The taxi stands could not be loaded");
-  }
+ const responseText = await respuesta.text();
 
-  const geojson = await respuesta.json();
+if (!respuesta.ok) {
+  throw new Error(
+    "HTTP " + respuesta.status + ": " +
+    responseText.slice(0, 300)
+  );
+}
 
+let geojson;
+
+try {
+  geojson = JSON.parse(responseText);
+} catch (error) {
+  throw new Error(
+    "The server response is not valid JSON: " +
+    responseText.slice(0, 300)
+  );
+}
+
+if (!geojson.features) {
+  throw new Error(
+    "No features were returned: " +
+    responseText.slice(0, 300)
+  );
+}
   if (!geojson.features) {
     throw new Error("The service has not returned the stops.");
   }
@@ -715,12 +735,20 @@ function crearCortes(valores) {
         }
 
         datosGeoJSON = datos;
-        await cargarParadasTaxi();
 
-        // Start in grey mode. Do not calculate automatically.
-        distribucion = null;
+// Load taxi stops independently so that a failure
+// does not prevent the demand polygons from displaying.
+try {
+  await cargarParadasTaxi();
+  console.log("Taxi_Stops loaded successfully.");
+} catch (error) {
+  console.error("Error loading Taxi_Stops:", error);
+}
 
-        actualizarMapa();
+// Start in grey mode. Do not calculate automatically.
+distribucion = null;
+
+actualizarMapa();
 
         const limites = capaMapa.getBounds();
 
