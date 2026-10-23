@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -234,18 +233,11 @@
         </div>
 
         <div class="grupo">
-          <label for="monthSelector">Month:</label>
-          <select id="monthSelector">
-            <option value="5">May</option>
-            <option value="6">June</option>
-            <option value="7">July</option>
-            <option value="8">August</option>
-            <option value="9">September</option>
-            <option value="10">October</option>
-            <option value="11">November</option>
-            <option value="12">December</option>
-          </select>
-        </div>
+  <label for="monthSelector">Month:</label>
+  <select id="monthSelector">
+    <option value="5" selected>May</option>
+  </select>
+</div>
 
         <div class="grupo">
           <label for="optionSelector">Option:</label>
@@ -271,8 +263,16 @@
     "use strict";
 
     // QGIS Cloud service, retained for the next integration stage.
-    const servicio =
-      "https://wms.prod.qgiscloud.com/dohanyan16/TaxiQaid_Demand_Analysis";
+    // QGIS Cloud service.
+const servicio =
+  "https://wms.prod.qgiscloud.com/dohanyan16/TaxiQaid_Demand_Analysis";
+
+// QGIS Cloud layers for May 2026.
+const capasQGIS = {
+  "Pick-Up": "05_May_2026_-_Pick-Up",
+  "Drop-Off": "05_May_2026_-_Drop-Off",
+  "Total Trips": "05_May_2026_-_Total"
+};
 
     const mapa = L.map("map", {
       center: [21.3891, 39.8579],
@@ -321,6 +321,73 @@
         window.location.href = "./occmanager.html";
       });
 
+    // Initial grey style.
+const estiloInicial = {
+  color: "#555555",
+  weight: 0.8,
+  fillColor: "#808080",
+  fillOpacity: 0.5
+};
+
+// Pick-Up: green palette.
+const coloresPickUp = [
+  "#f7fcf5",
+  "#e5f5e0",
+  "#c7e9c0",
+  "#a1d99b",
+  "#74c476",
+  "#41ab5d",
+  "#238b45",
+  "#006d2c",
+  "#005a24",
+  "#003d19"
+];
+
+// Drop-Off: red palette.
+const coloresDropOff = [
+  "#fff5f0",
+  "#fee0d2",
+  "#fcbba1",
+  "#fc9272",
+  "#fb6a4a",
+  "#ef3b2c",
+  "#cb181d",
+  "#a50f15",
+  "#67000d",
+  "#3b0008"
+];
+
+// Total Trips: blue palette.
+const coloresTotalTrips = [
+  "#f7fbff",
+  "#deebf7",
+  "#c6dbef",
+  "#9ecae1",
+  "#6baed6",
+  "#4292c6",
+  "#2171b5",
+  "#08519c",
+  "#08306b",
+  "#041f4a"
+];
+
+const paletas = {
+  "Pick-Up": coloresPickUp,
+  "Drop-Off": coloresDropOff,
+  "Total Trips": coloresTotalTrips
+};
+
+// Current map state.
+let datosGeoJSON = null;
+let capaMapa = null;
+let controlLeyenda = null;
+let mapaInicializado = false;
+let filtrosAplicados = null;
+let numeroSolicitud = 0;
+
+// Cache downloaded layers.
+const cacheCapas = new Map();
+    
     // Collect the current filter selections.
     function obtenerFiltros() {
       return {
@@ -331,35 +398,377 @@
       };
     }
 
-    // The selectors are ready, but data filtering will be connected
-    // once the new QGIS layers and their attribute fields are specified.
-    function actualizarSeleccion() {
-      const filtros = obtenerFiltros();
+    function obtenerNombreCapa(filtros) {
+  if (filtros.year !== "2026" || filtros.month !== "5") {
+    throw new Error("Only May 2026 is currently available.");
+  }
 
-      estado.textContent =
-        "Filters selected. QGIS analysis layers have not been connected yet.";
+  const nombre = capasQGIS[filtros.option];
 
-      resumen.textContent =
-        "Year: " + filtros.year +
-        " | Month: " +
-        (filtros.month === "Total"
-          ? "All months"
-          : monthSelector.options[monthSelector.selectedIndex].text) +
-        " | Hour: " +
-        (filtros.hour === "Total"
-          ? "All hours"
-          : filtros.hour.replace("_", ":")) +
-        " | Option: " + filtros.option;
+  if (!nombre) {
+    throw new Error("No QGIS layer configured for this option.");
+  }
+
+  return nombre;
+}
+
+function obtenerCampo(filtros) {
+  return filtros.hour === "Total" ? "total" : filtros.hour;
+}
+
+function obtenerValor(propiedades, campo) {
+  const original = propiedades?.[campo];
+
+  if (
+    original === null ||
+    original === undefined ||
+    String(original).trim() === ""
+  ) {
+    return null;
+  }
+
+  const valor = Number(original);
+
+  return Number.isFinite(valor) && valor >= 0 ? valor : null;
+}
+
+function escaparHTML(valor) {
+  return String(valor).replace(/[&<>"']/g, caracter => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[caracter]);
+}
+
+function crearCortes(valores) {
+  const ordenados = [...valores].sort((a, b) => a - b);
+
+  if (!ordenados.length) return [];
+
+  return Array.from({ length: 9 }, (_, i) => {
+    const indice = Math.floor(
+      (ordenados.length - 1) * ((i + 1) / 10)
+    );
+
+    return ordenados[indice];
+  });
+}
+
+function obtenerIndice(valor, cortes) {
+  if (valor === null || !cortes.length) return -1;
+
+  const indice = cortes.findIndex(corte => valor <= corte);
+
+  return indice === -1 ? 9 : indice;
+}
+
+function obtenerFiltros() {
+  return {
+    hour: selector.value,
+    year: yearSelector.value,
+    month: monthSelector.value,
+    option: optionSelector.value
+  };
+}
+
+    async function cargarCapaQGIS(nombreCapa) {
+  if (cacheCapas.has(nombreCapa)) {
+    return cacheCapas.get(nombreCapa);
+  }
+
+  const parametros = new URLSearchParams({
+    service: "WFS",
+    version: "1.1.0",
+    request: "GetFeature",
+    typeName: nombreCapa,
+    outputFormat: "application/json"
+  });
+
+  const respuesta = await fetch(
+    servicio + "?" + parametros.toString()
+  );
+
+  const texto = await respuesta.text();
+
+  if (!respuesta.ok) {
+    throw new Error(
+      "HTTP " + respuesta.status + " loading " + nombreCapa
+    );
+  }
+
+  let geojson;
+
+  try {
+    geojson = JSON.parse(texto);
+  } catch (error) {
+    throw new Error(
+      "Invalid JSON returned by QGIS Cloud: " + texto.slice(0, 200)
+    );
+  }
+
+  if (
+    !geojson ||
+    !Array.isArray(geojson.features) ||
+    geojson.features.length === 0
+  ) {
+    throw new Error("No features returned for " + nombreCapa);
+  }
+
+  const campos = new Set(
+    geojson.features.flatMap(feature =>
+      Object.keys(feature.properties ?? {})
+    )
+  );
+
+  if (!campos.has("name")) {
+    throw new Error('The layer is missing the "name" field.');
+  }
+
+  cacheCapas.set(nombreCapa, geojson);
+
+  return geojson;
+}
+
+    function mostrarMapaInicial(geojson) {
+  if (capaMapa) {
+    mapa.removeLayer(capaMapa);
+  }
+
+  capaMapa = L.geoJSON(geojson, {
+    style: () => estiloInicial,
+
+    onEachFeature: (feature, layer) => {
+      const nombre = feature.properties?.name ?? "Unnamed zone";
+      layer.bindPopup("<b>" + escaparHTML(nombre) + "</b>");
     }
+  }).addTo(mapa);
+
+  if (controlLeyenda) {
+    mapa.removeControl(controlLeyenda);
+    controlLeyenda = null;
+  }
+
+  mapaInicializado = true;
+  datosGeoJSON = geojson;
+
+  const limites = capaMapa.getBounds();
+
+  if (limites.isValid()) {
+    mapa.fitBounds(limites, { padding: [15, 15] });
+  }
+
+  estado.textContent =
+    "Data loaded. Change a filter to update the analysis.";
+
+  actualizarResumen(obtenerFiltros());
+}
+
+function crearLeyenda(valores, cortes, colores, titulo) {
+  if (controlLeyenda) {
+    mapa.removeControl(controlLeyenda);
+    controlLeyenda = null;
+  }
+
+  controlLeyenda = L.control({ position: "bottomright" });
+
+  controlLeyenda.onAdd = function () {
+    const div = L.DomUtil.create("div", "leyenda");
+
+    let html =
+      "<b style='display:block;margin-bottom:5px'>" +
+      escaparHTML(titulo) + "</b>";
+
+    if (!valores.length || !cortes.length) {
+      html += "No data available";
+    } else {
+      for (let i = 0; i < 10; i++) {
+        let etiqueta;
+
+        if (i === 0) {
+          etiqueta = "≤ " + cortes[0];
+        } else if (i === 9) {
+          etiqueta = "> " + cortes[8];
+        } else {
+          etiqueta =
+            "> " + cortes[i - 1] + " – ≤ " + cortes[i];
+        }
+
+        html +=
+          '<span class="muestra" style="background:' +
+          colores[i] + '"></span>' +
+          etiqueta + "<br>";
+      }
+    }
+
+    div.innerHTML = html;
+    L.DomEvent.disableClickPropagation(div);
+
+    return div;
+  };
+
+  controlLeyenda.addTo(mapa);
+}
+
+function mostrarAnalisis(geojson, filtros) {
+  const campo = obtenerCampo(filtros);
+  const colores = paletas[filtros.option];
+
+  const valores = geojson.features
+    .map(feature => obtenerValor(feature.properties, campo))
+    .filter(valor => valor !== null);
+
+  const cortes = crearCortes(valores);
+
+  if (capaMapa) {
+    mapa.removeLayer(capaMapa);
+  }
+
+  capaMapa = L.geoJSON(geojson, {
+    style: feature => {
+      const valor = obtenerValor(feature.properties, campo);
+
+      if (valor === null) {
+        return estiloInicial;
+      }
+
+      const indice = obtenerIndice(valor, cortes);
+
+      return {
+        color: "#555555",
+        weight: 0.8,
+        fillColor: colores[Math.max(0, indice)],
+        fillOpacity: 0.75
+      };
+    },
+
+    onEachFeature: (feature, layer) => {
+      const nombre = feature.properties?.name ?? "Unnamed zone";
+      const valor = obtenerValor(feature.properties, campo);
+
+      let contenido = "<b>" + escaparHTML(nombre) + "</b>";
+
+      contenido += valor === null
+        ? "<br>No data available"
+        : "<br>" + escaparHTML(filtros.option) + ": " + valor;
+
+      layer.bindPopup(contenido);
+    }
+  }).addTo(mapa);
+
+  crearLeyenda(
+    valores,
+    cortes,
+    colores,
+    filtros.option + " - " +
+      (filtros.hour === "Total"
+        ? "Total"
+        : filtros.hour.replace("_", ":"))
+  );
+
+  datosGeoJSON = geojson;
+  filtrosAplicados = { ...filtros };
+
+  actualizarResumen(filtros);
+
+  estado.textContent = valores.length
+    ? "Analysis updated successfully."
+    : "No valid data available for the selected field.";
+}
+
+function actualizarResumen(filtros) {
+  resumen.textContent =
+    "Year: " + filtros.year +
+    " | Month: May" +
+    " | Hour: " +
+    (filtros.hour === "Total"
+      ? "Total"
+      : filtros.hour.replace("_", ":")) +
+    " | Option: " + filtros.option;
+}
+
+async function actualizarSeleccion() {
+  const solicitudActual = ++numeroSolicitud;
+  const filtros = obtenerFiltros();
+
+  actualizarResumen(filtros);
+
+  let nombreCapa;
+
+  try {
+    nombreCapa = obtenerNombreCapa(filtros);
+  } catch (error) {
+    estado.textContent = error.message;
+    return;
+  }
+
+  const necesitaDescargar =
+    !datosGeoJSON ||
+    !filtrosAplicados ||
+    filtrosAplicados.option !== filtros.option ||
+    filtrosAplicados.year !== filtros.year ||
+    filtrosAplicados.month !== filtros.month;
+
+  try {
+    let geojson;
+
+    if (necesitaDescargar) {
+      estado.textContent = "Loading " + nombreCapa + "...";
+      geojson = await cargarCapaQGIS(nombreCapa);
+    } else {
+      geojson = datosGeoJSON;
+    }
+
+    if (solicitudActual !== numeroSolicitud) return;
+
+    if (!mapaInicializado) {
+      mostrarMapaInicial(geojson);
+      return;
+    }
+
+    mostrarAnalisis(geojson, filtros);
+
+  } catch (error) {
+    if (solicitudActual !== numeroSolicitud) return;
+
+    console.error("Manager Mode error:", error);
+    estado.textContent = "Could not update the map. " + error.message;
+  }
+}
 
     selector.addEventListener("change", actualizarSeleccion);
     yearSelector.addEventListener("change", actualizarSeleccion);
     monthSelector.addEventListener("change", actualizarSeleccion);
     optionSelector.addEventListener("change", actualizarSeleccion);
 
-    // Initial status.
+    async function iniciarAplicacion() {
+  estado.textContent = "Loading QGIS Cloud data...";
+
+  try {
+    const filtros = obtenerFiltros();
+    const nombreCapa = obtenerNombreCapa(filtros);
+
+    const geojson = await cargarCapaQGIS(nombreCapa);
+
+    // The map opens in grey mode.
+    mostrarMapaInicial(geojson);
+
+  } catch (error) {
+    console.error("Initial loading error:", error);
+
     estado.textContent =
-      "Map ready. Select the analysis filters.";
+      "Could not load the initial layer. " + error.message;
+  }
+}
+
+iniciarAplicacion();
+
+window.addEventListener("resize", () => {
+  mapa.invalidateSize();
+});
+
+setTimeout(() => mapa.invalidateSize(), 100);
 
     actualizarSeleccion();
 
