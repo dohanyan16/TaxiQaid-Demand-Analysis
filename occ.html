@@ -638,13 +638,13 @@ function crearCortes(valores) {
   );
 
   if (!respuesta.ok) {
-    throw new Error("No se pudieron cargar las paradas de taxi");
+    throw new Error("The taxi stands could not be loaded");
   }
 
   const geojson = await respuesta.json();
 
   if (!geojson.features) {
-    throw new Error("El servicio no ha devuelto las paradas");
+    throw new Error("The service has not returned the stops.");
   }
 
   if (capaParadas) {
@@ -663,7 +663,7 @@ function crearCortes(valores) {
     },
 
     onEachFeature: (feature, layer) => {
-      const nombre = feature.properties?.Name
+      const nombre = feature.properties?.name
         ?? "Taxi Stop";
 
       const latlng = layer.getLatLng();
