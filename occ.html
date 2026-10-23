@@ -686,30 +686,36 @@ if (!geojson.features) {
     },
 
     onEachFeature: (feature, layer) => {
-  const nombre = feature.properties?.name
-    ?? "Taxi Stop";
+  const nombre = feature.properties?.name ?? "Taxi Stop";
+  const geometry = feature.geometry;
 
-  let latlng;
+  let coordinates = null;
 
-  if (layer.getLatLng) {
-    latlng = layer.getLatLng();
-  } else if (feature.geometry?.type === "Point") {
-    const coordinates = feature.geometry.coordinates;
-    latlng = L.latLng(coordinates[1], coordinates[0]);
+  if (geometry?.type === "Point") {
+    coordinates = geometry.coordinates;
+  } else if (
+    geometry?.type === "MultiPoint" &&
+    geometry.coordinates.length > 0
+  ) {
+    coordinates = geometry.coordinates[0];
   }
 
-  let contenido =
-    "<b>" + escaparHTML(nombre) + "</b>";
+  let contenido = "<b>" + escaparHTML(nombre) + "</b>";
 
-  if (latlng) {
-    const googleMapsUrl =
-      "https://www.google.com/maps/search/?api=1&query=" +
-      latlng.lat + "," + latlng.lng;
+  if (coordinates && coordinates.length >= 2) {
+    const longitude = Number(coordinates[0]);
+    const latitude = Number(coordinates[1]);
 
-    contenido +=
-      '<br><a href="' + googleMapsUrl +
-      '" target="_blank" rel="noopener noreferrer">' +
-      "Open in Google Maps</a>";
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      const googleMapsUrl =
+        "https://www.google.com/maps/search/?api=1&query=" +
+        encodeURIComponent(latitude + "," + longitude);
+
+      contenido +=
+        '<br><a href="' + googleMapsUrl +
+        '" target="_blank" rel="noopener noreferrer">' +
+        "Open in Google Maps</a>";
+    }
   }
 
   layer.bindPopup(contenido);
