@@ -851,7 +851,33 @@ if (taxiStopsVisible) {
   }
 
   capaHotspots = L.geoJSON(geojson, {
-         });
+    pointToLayer: (feature, latlng) => {
+      const marker = L.circleMarker(latlng, {
+        radius: 6,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#8e44ad",
+        fillOpacity: 1
+      });
+
+      const updateMarkerSize = () => {
+        const zoom = mapa.getZoom();
+
+        const radius = Math.max(
+          2,
+          Math.min(
+            8,
+            6 * Math.pow(2, (zoom - 12) / 4)
+          )
+        );
+
+        marker.setRadius(radius);
+      };
+
+      mapa.on("zoomend", updateMarkerSize);
+      updateMarkerSize();
+
+      return marker;
     },
 
     onEachFeature: (feature, layer) => {
