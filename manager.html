@@ -464,14 +464,6 @@ function obtenerIndice(valor, cortes) {
   return indice === -1 ? 9 : indice;
 }
 
-function obtenerFiltros() {
-  return {
-    hour: selector.value,
-    year: yearSelector.value,
-    month: monthSelector.value,
-    option: optionSelector.value
-  };
-}
 
     async function cargarCapaQGIS(nombreCapa) {
   if (cacheCapas.has(nombreCapa)) {
@@ -703,37 +695,33 @@ async function actualizarSeleccion() {
     return;
   }
 
-  const necesitaDescargar =
-    !datosGeoJSON ||
-    !filtrosAplicados ||
-    filtrosAplicados.option !== filtros.option ||
-    filtrosAplicados.year !== filtros.year ||
-    filtrosAplicados.month !== filtros.month;
-
   try {
-    let geojson;
+    estado.textContent = "Loading " + nombreCapa + "...";
 
-    if (necesitaDescargar) {
-      estado.textContent = "Loading " + nombreCapa + "...";
-      geojson = await cargarCapaQGIS(nombreCapa);
-    } else {
-      geojson = datosGeoJSON;
+    const geojson = await cargarCapaQGIS(nombreCapa);
+
+    // Ignore an outdated request if the user changed filters.
+    if (solicitudActual !== numeroSolicitud) {
+      return;
     }
-
-    if (solicitudActual !== numeroSolicitud) return;
 
     if (!mapaInicializado) {
       mostrarMapaInicial(geojson);
       return;
     }
 
+    // Always render the currently selected layer.
     mostrarAnalisis(geojson, filtros);
 
   } catch (error) {
-    if (solicitudActual !== numeroSolicitud) return;
+    if (solicitudActual !== numeroSolicitud) {
+      return;
+    }
 
     console.error("Manager Mode error:", error);
-    estado.textContent = "Could not update the map. " + error.message;
+
+    estado.textContent =
+      "Could not update the map. " + error.message;
   }
 }
 
@@ -769,18 +757,6 @@ window.addEventListener("resize", () => {
 });
 
 setTimeout(() => mapa.invalidateSize(), 100);
-
-    actualizarSeleccion();
-
-    // Keep this variable available for the next QGIS integration step.
-    console.log("QGIS Cloud service configured:", servicio);
-
-    // Correct map rendering if the page layout changes.
-    window.addEventListener("resize", () => {
-      mapa.invalidateSize();
-    });
-
-    setTimeout(() => mapa.invalidateSize(), 100);
   </script>
 </body>
 </html>
