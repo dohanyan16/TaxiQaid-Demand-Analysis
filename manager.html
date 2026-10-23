@@ -151,6 +151,28 @@
       background: #e5e5e5;
     }
 
+    /* Heatmap legend, matching OCC Mode */
+.leyenda {
+  background: white;
+  padding: 8px 10px;
+  line-height: 1.5;
+  font-size: 12px;
+  box-shadow: 0 1px 5px #999;
+  border-radius: 5px;
+  color: #222;
+  min-width: 150px;
+}
+
+.muestra {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: middle;
+  border: 1px solid #777;
+  border-radius: 2px;
+}
+
     @media (max-width: 650px) {
       header {
         padding: 10px 12px;
@@ -268,10 +290,26 @@ const servicio =
   "https://wms.prod.qgiscloud.com/dohanyan16/TaxiQaid_Demand_Analysis";
 
 // QGIS Cloud layers for May 2026.
-const capasQGIS = {
-  "Pick-Up": "05_May_2026_-_Pick-Up",
-  "Drop-Off": "05_May_2026_-_Drop-Off",
-  "Total Trips": "05_May_2026_-_Total"
+const catalogoCapas = {
+  "2026": {
+    "5": {
+      name: "May",
+      layers: {
+        "Pick-Up": "05_May_2026_-_Pick-Up",
+        "Drop-Off": "05_May_2026_-_Drop-Off",
+        "Total Trips": "05_May_2026_-_Total"
+      }
+    },
+
+    "6": {
+      name: "June",
+      layers: {
+        "Pick-Up": "06_June_2026_-_Pick-Up",
+        "Drop-Off": "06_June_2026_-_Drop-Off",
+        "Total Trips": "06_June_2026_-_Total"
+      }
+    }
+  }
 };
 
     const mapa = L.map("map", {
@@ -314,6 +352,49 @@ const capasQGIS = {
 
       selector.appendChild(opcion);
     }
+
+    function rellenarSelectoresFecha() {
+  yearSelector.replaceChildren();
+  monthSelector.replaceChildren();
+
+  const years = Object.keys(catalogoCapas)
+    .sort((a, b) => Number(a) - Number(b));
+
+  years.forEach(year => {
+    const option = document.createElement("option");
+
+    option.value = year;
+    option.textContent = year;
+
+    yearSelector.appendChild(option);
+  });
+
+  function actualizarMeses() {
+    const year = yearSelector.value;
+    const meses = catalogoCapas[year] || {};
+
+    monthSelector.replaceChildren();
+
+    const monthNumbers = Object.keys(meses)
+      .sort((a, b) => Number(a) - Number(b));
+
+    monthNumbers.forEach(month => {
+      const option = document.createElement("option");
+
+      option.value = month;
+      option.textContent = meses[month].name;
+
+      monthSelector.appendChild(option);
+    });
+  }
+
+  yearSelector.addEventListener("change", () => {
+    actualizarMeses();
+    actualizarSeleccion();
+  });
+
+  actualizarMeses();
+}
 
     // Return to the repository's occmanager.html page.
     document.getElementById("backToManager")
@@ -399,9 +480,25 @@ const cacheCapas = new Map();
     }
 
     function obtenerNombreCapa(filtros) {
-  if (filtros.year !== "2026" || filtros.month !== "5") {
-    throw new Error("Only May 2026 is currently available.");
+  const periodo =
+    catalogoCapas[filtros.year]?.[filtros.month];
+
+  if (!periodo) {
+    throw new Error(
+      "No data configured for the selected year and month."
+    );
   }
+
+  const nombre = periodo.layers[filtros.option];
+
+  if (!nombre) {
+    throw new Error(
+      "No QGIS layer configured for this option."
+    );
+  }
+
+  return nombre;
+}
 
   const nombre = capasQGIS[filtros.option];
 
@@ -726,9 +823,8 @@ async function actualizarSeleccion() {
 }
 
     selector.addEventListener("change", actualizarSeleccion);
-    yearSelector.addEventListener("change", actualizarSeleccion);
-    monthSelector.addEventListener("change", actualizarSeleccion);
-    optionSelector.addEventListener("change", actualizarSeleccion);
+monthSelector.addEventListener("change", actualizarSeleccion);
+optionSelector.addEventListener("change", actualizarSeleccion);
 
     async function iniciarAplicacion() {
   estado.textContent = "Loading QGIS Cloud data...";
@@ -749,6 +845,8 @@ async function actualizarSeleccion() {
       "Could not load the initial layer. " + error.message;
   }
 }
+
+rellenarSelectoresFecha();
 
 iniciarAplicacion();
 
