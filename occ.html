@@ -743,6 +743,9 @@ try {
   console.log("Taxi_Stops loaded successfully.");
 } catch (error) {
   console.error("Error loading Taxi_Stops:", error);
+  console.error("Error details:", error.message);
+  estado.textContent =
+    "Taxi stops error: " + error.message;
 }
 
 // Start in grey mode. Do not calculate automatically.
