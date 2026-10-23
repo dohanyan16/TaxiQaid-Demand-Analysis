@@ -233,11 +233,6 @@
 
         <div class="grupo">
   <label>&nbsp;</label>
-  <button id="backToManager">Back to Manager Mode</button>
-</div>
-
-        <div class="grupo">
-  <label>&nbsp;</label>
   <button id="toggleTaxiStops">Disable Taxi Stops</button>
 </div>
         <div class="grupo">
@@ -934,10 +929,7 @@ if (taxiStopsVisible) {
     mapa.removeLayer(capaHotspots);
   }
 }
-    document.getElementById("backToManager")
-  .addEventListener("click", () => {
-    window.location.href = "./manager.html";
-  });
+
 
     async function cargarDatos() {
       if (cargando) return;
