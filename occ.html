@@ -601,10 +601,26 @@ function crearCortes(valores) {
           }
         }
 
-        div.innerHTML = html;
-        L.DomEvent.disableClickPropagation(div);
+       html +=
+  '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;">' +
+    '<span style="' +
+      'display:inline-block;' +
+      'width:12px;' +
+      'height:12px;' +
+      'border-radius:50%;' +
+      'background:#F58220;' +
+      'border:2px solid #ffffff;' +
+      'box-shadow:0 0 0 1px #777;' +
+      'margin-right:5px;' +
+      'vertical-align:middle;' +
+    '"></span>' +
+    '<b>Taxi Stops</b>' +
+  '</div>';
 
-        return div;
+div.innerHTML = html;
+L.DomEvent.disableClickPropagation(div);
+
+return div;
       };
 
       controlLeyenda.addTo(mapa);
@@ -675,15 +691,27 @@ if (!geojson.features) {
   }
 
   capaParadas = L.geoJSON(geojson, {
-    pointToLayer: (feature, latlng) => {
-      return L.circleMarker(latlng, {
-        radius: 6,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: "#F58220",
-        fillOpacity: 1
-      });
-    },
+   pointToLayer: (feature, latlng) => {
+  const marker = L.circleMarker(latlng, {
+    radius: 6,
+    color: "#ffffff",
+    weight: 2,
+    fillColor: "#F58220",
+    fillOpacity: 1
+  });
+
+  const updateMarkerSize = () => {
+    const zoom = mapa.getZoom();
+    const radius = Math.max(2, Math.min(8, 6 * Math.pow(2, (zoom - 12) / 4)));
+
+    marker.setRadius(radius);
+  };
+
+  mapa.on("zoomend", updateMarkerSize);
+  updateMarkerSize();
+
+  return marker;
+},
 
     onEachFeature: (feature, layer) => {
   const nombre = feature.properties?.name ?? "Taxi Stop";
