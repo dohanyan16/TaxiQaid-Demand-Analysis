@@ -232,6 +232,11 @@
       <div class="controles">
 
         <div class="grupo">
+  <label>&nbsp;</label>
+  <button id="toggleTaxiStops">Disable Taxi Stops</button>
+</div>
+
+        <div class="grupo">
           <label for="selector">Select hour:</label>
           <select id="selector"></select>
         </div>
@@ -270,6 +275,9 @@
     const capa = "Weekly_Analysis";
     const capaTaxiStop = "Taxi_Stops";
     let capaParadas = null;
+    let taxiStopsVisible = true;
+
+const botonTaxiStops = document.getElementById("toggleTaxiStops");
 
     const mapa = L.map("map", {
       center: [21.3891, 39.8579],
@@ -601,21 +609,23 @@ function crearCortes(valores) {
           }
         }
 
-       html +=
-  '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;">' +
-    '<span style="' +
-      'display:inline-block;' +
-      'width:12px;' +
-      'height:12px;' +
-      'border-radius:50%;' +
-      'background:#F58220;' +
-      'border:2px solid #ffffff;' +
-      'box-shadow:0 0 0 1px #777;' +
-      'margin-right:5px;' +
-      'vertical-align:middle;' +
-    '"></span>' +
-    '<b>Taxi Stops</b>' +
-  '</div>';
+       if (taxiStopsVisible) {
+  html +=
+    '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;">' +
+      '<span style="' +
+        'display:inline-block;' +
+        'width:12px;' +
+        'height:12px;' +
+        'border-radius:50%;' +
+        'background:#F58220;' +
+        'border:2px solid #ffffff;' +
+        'box-shadow:0 0 0 1px #777;' +
+        'margin-right:5px;' +
+        'vertical-align:middle;' +
+      '"></span>' +
+      '<b>Taxi Stops</b>' +
+    '</div>';
+}
 
 div.innerHTML = html;
 L.DomEvent.disableClickPropagation(div);
@@ -750,7 +760,11 @@ if (!geojson.features) {
 }
   }).addTo(mapa);
 
-   capaParadas.bringToFront();   
+if (taxiStopsVisible) {
+  capaParadas.addTo(mapa);
+  capaParadas.bringToFront();
+} else {
+  mapa.removeLayer(capaParadas);
 }
 
     async function cargarDatos() {
@@ -861,7 +875,27 @@ actualizarMapa();
         "Hour selected. Click Calculate Distribution to update the map.";
     });
 
-    cargarDatos();
+    botonTaxiStops.addEventListener("click", () => {
+  taxiStopsVisible = !taxiStopsVisible;
+
+  botonTaxiStops.textContent = taxiStopsVisible
+    ? "Disable Taxi Stops"
+    : "Enable Taxi Stops";
+
+  if (capaParadas) {
+    if (taxiStopsVisible) {
+      capaParadas.addTo(mapa);
+      capaParadas.bringToFront();
+    } else {
+      mapa.removeLayer(capaParadas);
+    }
+  }
+
+  actualizarMapa();
+});
+      
+      
+      cargarDatos();
   </script>
 </body>
 </html>
