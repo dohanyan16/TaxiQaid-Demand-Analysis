@@ -128,20 +128,27 @@
 
     #map {
       height: calc(100vh - 105px);
-      min-height: 300px;
+      min-height: 400px;
       background: #e5e5e5;
     }
 
     .leyenda {
-      background: white;
-      padding: 10px 12px;
-      line-height: 1.6;
-      box-shadow: 0 1px 5px #999;
-      border-radius: 5px;
-      color: #222;
-      max-height: 65vh;
-      overflow-y: auto;
-    }
+  background: white;
+  padding: 8px 10px;
+  line-height: 1.25;
+  font-size: 12px;
+  box-shadow: 0 1px 5px #999;
+  border-radius: 5px;
+  color: #222;
+  max-height: none;
+  overflow: visible;
+}
+
+.leyenda .muestra {
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+}
 
     .muestra {
       display: inline-block;
@@ -556,7 +563,9 @@ function crearCortes(valores) {
       controlLeyenda.onAdd = function () {
         const div = L.DomUtil.create("div", "leyenda");
 
-        let html = "<b>Recommended Taxis</b><br>";
+        let html =
+        "<b style='display:block;margin-bottom:4px'>" +
+        "Recommended Taxis</b>";
 
         if (!valores.length) {
           html += "No data";
