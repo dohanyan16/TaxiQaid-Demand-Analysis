@@ -608,6 +608,9 @@ function crearCortes(valores) {
       };
 
       controlLeyenda.addTo(mapa);
+      if (capaParadas) {
+  capaParadas.bringToFront();
+}
 
       const sinAsignar =
         distribucion.totalTaxis -
@@ -712,6 +715,8 @@ if (!geojson.features) {
   layer.bindPopup(contenido);
 }
   }).addTo(mapa);
+
+   capaParadas.bringToFront();   
 }
 
     async function cargarDatos() {
