@@ -1093,76 +1093,68 @@ actualizarMapa();
 });
       
       
- async function comprobarAcceso() {
-      const SUPABASE_URL =
-        "https://gycijhgmmaznvcoxphlh.supabase.co";
+async function comprobarAcceso() {
+  try {
+    // Usar el cliente compartido con la misma configuración.
+    const supabaseClient = supabase.createClient(
+      "https://gycijhgmmaznvcoxphlh.supabase.co",
+      "sb_publishable_HzPfzuN-3Z-6aCuvGWcBHQ_R5gF7F7T"
+    );
 
-      const SUPABASE_PUBLIC_KEY =
-        "sb_publishable_HzPfzuN-3Z-6aCuvGWcBHQ_R5gF7F7T";
+    // Comprobar el usuario autenticado.
+    const {
+      data: { user },
+      error: authError
+    } = await supabaseClient.auth.getUser();
 
-      try {
-        // 1. Crear el cliente de Supabase.
-        const supabaseClient = supabase.createClient(
-          SUPABASE_URL,
-          SUPABASE_PUBLIC_KEY
-        );
-
-        // 2. Comprobar si existe una sesión.
-        const {
-          data: { session },
-          error: sessionError
-        } = await supabaseClient.auth.getSession();
-
-        if (sessionError) {
-          throw sessionError;
-        }
-
-        // 3. Si no hay sesión, volver al login.
-        if (!session) {
-          window.location.replace("./index.html");
-          return;
-        }
-
-        // 4. Comprobar que el usuario tiene rol Manager.
-        const {
-          data: profile,
-          error: profileError
-        } = await supabaseClient
-          .from("taxiqaid_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          throw profileError;
-        }
-
-        if (!profile || profile.role !== "Manager") {
-          await supabaseClient.auth.signOut();
-          window.location.replace("./index.html");
-          return;
-        }
-
-        // 5. Solo ahora se permite cargar el mapa.
-        estado.textContent =
-          "Access verified. Loading QGIS data...";
-
-        await cargarDatos();
-
-      } catch (error) {
-        console.error("Authentication error:", error);
-
-        estado.textContent =
-          "Authentication failed. Redirecting to login...";
-
-        setTimeout(() => {
-          window.location.replace("./index.html");
-        }, 1500);
-      }
+    if (authError) {
+      throw authError;
     }
 
-    // Único punto de entrada de la aplicación.
-    comprobarAcceso();
+    if (!user) {
+      window.location.replace("./index.html");
+      return false;
+    }
+
+    // Comprobar el rol del usuario.
+    const {
+      data: perfil,
+      error: perfilError
+    } = await supabaseClient
+      .from("taxiqaid_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (perfilError) {
+      throw perfilError;
+    }
+
+    if (!perfil || perfil.role !== "Manager") {
+      // No cerrar la sesión automáticamente por un rol incorrecto.
+      window.location.replace("./index.html");
+      return false;
+    }
+
+    estado.textContent =
+      "Access verified. Loading QGIS data...";
+
+    await cargarDatos();
+    return true;
+
+  } catch (error) {
+    console.error("OCC authentication error:", error);
+
+    estado.textContent =
+      "Authentication error: " +
+      (error.message || "Unknown error");
+
+    // No redirigir inmediatamente: necesitamos ver el error real.
+    return false;
+  }
+}
+
+comprobarAcceso();
   </script>
 </body>
 </html>
