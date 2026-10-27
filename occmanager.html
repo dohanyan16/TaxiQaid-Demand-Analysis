@@ -213,7 +213,21 @@
     }
   }
 </style>
-    <script>async function comprobarAccesoManager() {
+   <!-- Supabase: autenticación y control de acceso -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = "https://gycijhgmmaznvcoxphlh.supabase.co";
+    const SUPABASE_PUBLIC_KEY = "sb_publishable_HzPfzuV-3Z-6aCuvGWcBHQ_R5gF7F7T";
+
+    const { createClient } = supabase;
+
+    const supabaseClient = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY
+    );
+
+    async function comprobarAccesoManager() {
       try {
         const {
           data: { user },
