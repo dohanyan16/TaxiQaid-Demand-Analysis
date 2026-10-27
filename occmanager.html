@@ -1093,79 +1093,76 @@ actualizarMapa();
 });
       
       
-      async function comprobarAcceso() {
-  const SUPABASE_URL =
-    "https://gycijhgmmaznvcoxphlh.supabase.co";
+ async function comprobarAcceso() {
+      const SUPABASE_URL =
+        "https://gycijhgmmaznvcoxphlh.supabase.co";
 
-  const SUPABASE_PUBLIC_KEY =
-    "sb_publishable_HzPfzuV-3Z-6aCuvGWcBHQ_R5gF7F7T";
+      const SUPABASE_PUBLIC_KEY =
+        "sb_publishable_HzPfzuN-3Z-6aCuvGWcBHQ_R5gF7F7T";
 
-  try {
-    const { createClient } = supabase;
+      try {
+        // 1. Crear el cliente de Supabase.
+        const supabaseClient = supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLIC_KEY
+        );
 
-    const supabaseClient = createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLIC_KEY
-    );
+        // 2. Comprobar si existe una sesión.
+        const {
+          data: { session },
+          error: sessionError
+        } = await supabaseClient.auth.getSession();
 
-    // Check whether a session exists.
-    const {
-      data: { session },
-      error: sessionError
-    } = await supabaseClient.auth.getSession();
+        if (sessionError) {
+          throw sessionError;
+        }
 
-    if (sessionError) {
-      throw sessionError;
-    }
+        // 3. Si no hay sesión, volver al login.
+        if (!session) {
+          window.location.replace("./index.html");
+          return;
+        }
 
-    // No session: redirect to login immediately.
-    if (!session) {
-      window.location.replace("./index.html");
-      return;
-    }
+        // 4. Comprobar que el usuario tiene rol Manager.
+        const {
+          data: profile,
+          error: profileError
+        } = await supabaseClient
+          .from("taxiqaid_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
 
-    // Check the user's role.
-    const {
-      data: profile,
-      error: profileError
-    } = await supabaseClient
-      .from("taxiqaid_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
+        if (profileError) {
+          throw profileError;
+        }
 
-    if (
-      profileError ||
-      !profile ||
-      profile.role !== "Manager"
-    ) {
-      await supabaseClient.auth.signOut();
-      window.location.replace("./index.html");
-      return;
-    }
+        if (!profile || profile.role !== "Manager") {
+          await supabaseClient.auth.signOut();
+          window.location.replace("./index.html");
+          return;
+        }
 
-    // Only load QGIS data after authorization.
-    estado.textContent = "Access verified. Loading QGIS data...";
+        // 5. Solo ahora se permite cargar el mapa.
+        estado.textContent =
+          "Access verified. Loading QGIS data...";
 
-    await cargarDatos();
+        await cargarDatos();
 
-  } catch (error) {
-    console.error("Authentication error:", error);
+      } catch (error) {
+        console.error("Authentication error:", error);
 
-    estado.textContent =
-      "Authentication failed. Please return to the login page.";
+        estado.textContent =
+          "Authentication failed. Redirecting to login...";
 
-    setTimeout(() => {
-      window.location.replace("./index.html");
-    }, 1500);
-  }
-}
-
-        // Start the existing application only after authorization.
-        cargarDatos();
+        setTimeout(() => {
+          window.location.replace("./index.html");
+        }, 1500);
       }
+    }
 
-      comprobarAcceso();
+    // Único punto de entrada de la aplicación.
+    comprobarAcceso();
   </script>
 </body>
 </html>
