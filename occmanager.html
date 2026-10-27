@@ -327,9 +327,15 @@
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <script>
+    (async function iniciarOCC() {
+  // Comprobar el acceso ANTES de inicializar el mapa.
+  const accesoPermitido = await comprobarAccesoManager();
+
+  if (!accesoPermitido) {
+    return;
+  }
     const servicio =
       "https://wms.prod.qgiscloud.com/dohanyan16/TaxiQaid_Demand_Analysis";
 
