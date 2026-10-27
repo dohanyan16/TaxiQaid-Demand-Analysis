@@ -213,6 +213,41 @@
     }
   }
 </style>
+    <script>async function comprobarAccesoManager() {
+      try {
+        const {
+          data: { user },
+          error: authError
+        } = await supabaseClient.auth.getUser();
+
+        if (authError || !user) {
+          window.location.replace("./index.html");
+          return false;
+        }
+
+        const { data: perfil, error: perfilError } =
+          await supabaseClient
+            .from("taxiqaid_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        if (perfilError || !perfil || perfil.role !== "Manager") {
+          await supabaseClient.auth.signOut();
+          window.location.replace("./index.html");
+          return false;
+        }
+
+        return true;
+
+      } catch (error) {
+        console.error("Access verification error:", error);
+        window.location.replace("./index.html");
+        return false;
+      }
+    }
+  </script>
+
 </head>
 
 <body>
@@ -1091,100 +1126,9 @@ actualizarMapa();
 
   actualizarMapa();
 });
-      
-      
-async function comprobarAcceso() {
-  const SUPABASE_URL =
-    "https://gycijhgmmaznvcoxphlh.supabase.co";
 
-  const SUPABASE_PUBLIC_KEY =
-    "sb_publishable_HzPfzuN-3Z-6aCuvGWcBHQ_R5gF7F7T";
+    cargarDatos();
 
-  try {
-    estado.textContent = "Checking Supabase session...";
-
-    const supabaseClient = supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLIC_KEY
-    );
-
-    // STEP 1: Check the session.
-    const {
-      data: { session },
-      error: sessionError
-    } = await supabaseClient.auth.getSession();
-
-    console.log("STEP 1 - Session:", !!session);
-    console.log("STEP 1 - Error:", sessionError);
-
-    if (sessionError) {
-      estado.textContent =
-        "Session error: " + sessionError.message;
-      return;
-    }
-
-    if (!session) {
-      estado.textContent =
-        "No Supabase session found in OCC Mode.";
-      console.error("OCC: No session found. No redirect performed.");
-      return;
-    }
-
-    // STEP 2: Check the user.
-    const {
-      data: { user },
-      error: userError
-    } = await supabaseClient.auth.getUser();
-
-    console.log("STEP 2 - User exists:", !!user);
-    console.log("STEP 2 - Error:", userError);
-
-    if (userError || !user) {
-      estado.textContent =
-        "User verification error: " +
-        (userError?.message || "No user found");
-      return;
-    }
-
-    // STEP 3: Check the role.
-    const {
-      data: perfil,
-      error: perfilError
-    } = await supabaseClient
-      .from("taxiqaid_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    console.log("STEP 3 - Profile:", perfil);
-    console.log("STEP 3 - Error:", perfilError);
-
-    if (perfilError) {
-      estado.textContent =
-        "Role query error: " + perfilError.message;
-      return;
-    }
-
-    if (!perfil || perfil.role !== "Manager") {
-      estado.textContent =
-        "Manager role not found. Check taxiqaid_roles.";
-      return;
-    }
-
-    // STEP 4: Only now load the map.
-    estado.textContent =
-      "Access verified. Loading QGIS data...";
-
-    await cargarDatos();
-
-  } catch (error) {
-    console.error("OCC diagnostic error:", error);
-    estado.textContent =
-      "Error: " + (error.message || String(error));
-  }
-}
-
-comprobarAcceso();
   </script>
 </body>
 </html>
