@@ -1094,29 +1094,59 @@ actualizarMapa();
       
       
 async function comprobarAcceso() {
+  const SUPABASE_URL =
+    "https://gycijhgmmaznvcoxphlh.supabase.co";
+
+  const SUPABASE_PUBLIC_KEY =
+    "sb_publishable_HzPfzuN-3Z-6aCuvGWcBHQ_R5gF7F7T";
+
   try {
-    // Usar el cliente compartido con la misma configuración.
+    estado.textContent = "Checking Supabase session...";
+
     const supabaseClient = supabase.createClient(
-      "https://gycijhgmmaznvcoxphlh.supabase.co",
-      "sb_publishable_HzPfzuN-3Z-6aCuvGWcBHQ_R5gF7F7T"
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY
     );
 
-    // Comprobar el usuario autenticado.
+    // STEP 1: Check the session.
+    const {
+      data: { session },
+      error: sessionError
+    } = await supabaseClient.auth.getSession();
+
+    console.log("STEP 1 - Session:", !!session);
+    console.log("STEP 1 - Error:", sessionError);
+
+    if (sessionError) {
+      estado.textContent =
+        "Session error: " + sessionError.message;
+      return;
+    }
+
+    if (!session) {
+      estado.textContent =
+        "No Supabase session found in OCC Mode.";
+      console.error("OCC: No session found. No redirect performed.");
+      return;
+    }
+
+    // STEP 2: Check the user.
     const {
       data: { user },
-      error: authError
+      error: userError
     } = await supabaseClient.auth.getUser();
 
-    if (authError) {
-      throw authError;
+    console.log("STEP 2 - User exists:", !!user);
+    console.log("STEP 2 - Error:", userError);
+
+    if (userError || !user) {
+      estado.textContent =
+        "User verification error: " +
+        (userError?.message || "No user found");
+      return;
     }
 
-    if (!user) {
-      window.location.replace("./index.html");
-      return false;
-    }
-
-    // Comprobar el rol del usuario.
+    // STEP 3: Check the role.
     const {
       data: perfil,
       error: perfilError
@@ -1126,31 +1156,31 @@ async function comprobarAcceso() {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    console.log("STEP 3 - Profile:", perfil);
+    console.log("STEP 3 - Error:", perfilError);
+
     if (perfilError) {
-      throw perfilError;
+      estado.textContent =
+        "Role query error: " + perfilError.message;
+      return;
     }
 
     if (!perfil || perfil.role !== "Manager") {
-      // No cerrar la sesión automáticamente por un rol incorrecto.
-      window.location.replace("./index.html");
-      return false;
+      estado.textContent =
+        "Manager role not found. Check taxiqaid_roles.";
+      return;
     }
 
+    // STEP 4: Only now load the map.
     estado.textContent =
       "Access verified. Loading QGIS data...";
 
     await cargarDatos();
-    return true;
 
   } catch (error) {
-    console.error("OCC authentication error:", error);
-
+    console.error("OCC diagnostic error:", error);
     estado.textContent =
-      "Authentication error: " +
-      (error.message || "Unknown error");
-
-    // No redirigir inmediatamente: necesitamos ver el error real.
-    return false;
+      "Error: " + (error.message || String(error));
   }
 }
 
