@@ -217,6 +217,55 @@
       }
     }
   </style>
+
+<!-- Supabase: autenticación y control de acceso -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = "https://gycijhgmmaznvcoxphlh.supabase.co";
+    const SUPABASE_PUBLIC_KEY = "sb_publishable_HzPfzuV-3Z-6aCuvGWcBHQ_R5gF7F7T";
+
+    const { createClient } = supabase;
+
+    const supabaseClient = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLIC_KEY
+    );
+
+    async function comprobarAccesoManager() {
+      try {
+        const {
+          data: { user },
+          error: authError
+        } = await supabaseClient.auth.getUser();
+
+        if (authError || !user) {
+          window.location.replace("./index.html");
+          return false;
+        }
+
+        const { data: perfil, error: perfilError } =
+          await supabaseClient
+            .from("taxiqaid_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        if (perfilError || !perfil || perfil.role !== "Manager") {
+          await supabaseClient.auth.signOut();
+          window.location.replace("./index.html");
+          return false;
+        }
+
+        return true;
+
+      } catch (error) {
+        console.error("Access verification error:", error);
+        window.location.replace("./index.html");
+        return false;
+      }
+    }
+  </script>
 </head>
 
 <body>
@@ -870,7 +919,11 @@ optionSelector.addEventListener("change", actualizarSeleccion);
 
 rellenarSelectoresFecha();
 
-iniciarAplicacion();
+comprobarAccesoManager().then(autorizado => {
+  if (autorizado) {
+    iniciarAplicacion();
+  }
+});
 
 window.addEventListener("resize", () => {
   mapa.invalidateSize();
