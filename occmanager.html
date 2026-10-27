@@ -1147,8 +1147,13 @@ actualizarMapa();
   actualizarMapa();
 });
 
-      inicarOCC();
-      cargarDatos();
+        cargarDatos();
+
+    })().catch(error => {
+      console.error("Error initializing OCC:", error);
+      document.getElementById("estado").textContent =
+        "Error initializing OCC. Check the browser console.";
+    });
 
   </script>
 </body>
